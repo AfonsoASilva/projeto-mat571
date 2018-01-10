@@ -1,4 +1,4 @@
-#entrada
+#entrada - teste
 f = open('uni4x8', 'r')
 print 'arquivo:'
 #while(f.read())
