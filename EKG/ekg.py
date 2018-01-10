@@ -1,3 +1,4 @@
+import sys
 #entrada
 class Tarefa:
     """docstring for Tarefa."""
@@ -28,13 +29,19 @@ def retorna_meta_dados(linha):
     mapa['tempo_simulacao'] = metadata[3]
     return mapa
 
+def calcular_sep(k, m):
+    if (k < m):
+        return float(k) / (float(k) + 1)
+    else:
+        return 1
+
 f = open('../uni4x8', 'r')
 for line in f:
     if line[0] != '#':
         entrada = line.split(': ')
         meta_dados = retorna_meta_dados(entrada[0])
         lista_tarefas = retorna_lista_tarefas(entrada[1])
-        
+
         break
 
 
