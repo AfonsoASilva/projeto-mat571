@@ -114,7 +114,7 @@ def calcular_sep(k, num_processadores):
 def verifica_escalonabilidade_ekg(lista_tarefas, lista_processadores, meta_dados):
     tarefas_pesadas = []
     tarefas_leves = []
-    K = 4
+    K = 3
     SEP = calcular_sep(K, meta_dados['qtd_processadores'])
     for tarefa in lista_tarefas:
         if float(tarefa.utilizacao) > float(SEP):
@@ -131,8 +131,6 @@ def verifica_escalonabilidade_ekg(lista_tarefas, lista_processadores, meta_dados
             if L + 1 <= int(meta_dados['qtd_processadores']):
                 p = L + 1
                 for i in range(L + 1, int(meta_dados['qtd_tarefas']) + 1):
-                    print i
-                    print lista_processadores[p].utilizacao + lista_tarefas_separadas[i].utilizacao
                     if (lista_processadores[p].utilizacao + lista_tarefas_separadas[i].utilizacao) <= 1:
                         lista_processadores[p].adicionar_tarefa(lista_tarefas_separadas[i])
                     else:
