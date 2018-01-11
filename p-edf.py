@@ -55,6 +55,7 @@ def retorna_lista_tarefas(linha):
         tarefa_lst.append('t'+str(count))
         tarefa = Tarefa(tarefa_lst)
         lista_tarefas.append(tarefa)
+        count = count + 1
     return lista_tarefas
 
 def retorna_lista_processadores(qtd):
@@ -155,7 +156,7 @@ for line in f:
                 del lista_tarefas[-1]
         for processador in lista_processadores:
         	processador.print_processador()
-        	execucao_edf(processador.tarefas, 10)
+        	execucao_edf(processador.tarefas, 20)
         break
 
         
