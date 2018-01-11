@@ -1,14 +1,17 @@
 import sys
+from math import floor
 #entrada
 class Tarefa:
     """docstring for Tarefa."""
-    def __init__(self, arg):
+    def __init__(self, arg, titulo):
+        self.titulo = titulo
         self.liberacao = int(arg[0])
         self.execucao = float(arg[1])
         self.execucoes_restantes = self.execucao
         self.periodo = int(arg[2])
         self.deadline = self.periodo
         self.utilizacao = self.execucao / self.periodo
+        self.parte = 0
     def atualizar_deadline(self):
         self.deadline = self.deadline + self.periodo
         self.execucoes_restantes = self.execucao
@@ -19,7 +22,7 @@ class Tarefa:
         else:
             return False
     def return_tarefa(self):
-        return "Tempo de Execucao: " + str(self.execucao) + ", Periodo: " + str(self.periodo) + ", Utilizacao: " + str(self.utilizacao) + ";"
+        return "Tarefa " + self.titulo + ": Tempo de Execucao: " + str(self.execucao) + "; Periodo: " + str(self.periodo) + "; Utilizacao: " + str(self.utilizacao) + ";"
 
 class Processador:
     """docstring for Tarefa."""
@@ -27,21 +30,33 @@ class Processador:
         self.identificacao = arg
         self.tarefas = []
         self.utilizacao = 0
+        self.execucao = []
     def adicionar_tarefa(self, tarefa):
         self.utilizacao = self.utilizacao + tarefa.utilizacao
         self.tarefas.append(tarefa)
     def print_processador(self):
-        print "Identificacao: " + str(self.identificacao) + ", Utilizacao: " + str(self.utilizacao) + ", Tarefas: "
+        print "...Processador " + str(self.identificacao) + ": Utilizacao: " + str(self.utilizacao) + "; Tarefas: "
         for tarefa in self.tarefas:
             print "......." + tarefa.return_tarefa()
     def limpar_processador(self):
         self.utilizacao = 0
         self.tarefas = []
+    def atualizar_historico_execucao(self, executado):
+        self.execucao.append()
+    def atualizar_deadlines(self, deadline):
+        for index, tarefa in enumerate(self.tarefas):
+            if self.tarefas[index].deadline == deadline:
+                self.tarefas[index].atualizar_deadline()
 
 def limpar_processadores(lista_processadores):
     for processador in lista_processadores:
         if (processador != ''):
             processador.limpar_processador()
+
+def print_processadores(lista_processadores):
+    for processador in lista_processadores:
+        if not type(processador) is str:
+            processador.print_processador()
 
 def retorna_lista_tarefas(linha):
     tarefas_str = linha.split(';')
@@ -50,7 +65,8 @@ def retorna_lista_tarefas(linha):
     for tarefa_str in tarefas_str:
         tarefa_str = tarefa_str[1:-1]
         tarefa_lst = tarefa_str.split(',')
-        tarefa = Tarefa(tarefa_lst)
+        tarefa_id = "t" + str(len(lista_tarefas))
+        tarefa = Tarefa(tarefa_lst, tarefa_id)
         lista_tarefas.append(tarefa)
     return lista_tarefas
 
@@ -84,6 +100,13 @@ def ordenar_tarefas_deadline(lista_tarefas, meta_dados):
     lista_tarefas.sort(key=lambda x: x.deadline)
     return lista_tarefas
 
+def retorna_menor_deadline(lista_tarefas):
+    menor_deadline = lista_tarefas[0].deadline
+    for tarefa in lista_tarefas:
+        if tarefa.deadline < menor_deadline:
+            menor_deadline = tarefa.deadline
+            menor_tarefa = tarefa
+
 def execucao_edf(lista_tarefas, tempo):
     lista_tarefas = ordenar_tarefas_deadline(lista_tarefas)
     for index in range(tempo):
@@ -105,16 +128,26 @@ def execucao_edf(lista_tarefas, tempo):
                 if i >= len(lista_tarefas):
                     flagET = False
 
+def execucao_tarefas_pesadas(lista_processadores, tempo, indice_mudanca):
+    for processador in lista_processadores:
+        for tempo in range(1, (tempo + 1)):
+            if processador.tarefas[0].executar_tarefa():
+                processador.execucao.append(processador.tarefas[0].titulo)
+            else:
+                processador.execucao.append('-')
+            processador.atualizar_deadlines(retorna_menor_deadline(processador.tarefas))
+
+
 def calcular_sep(k, num_processadores):
     if (k < int(num_processadores)):
         return float(k) / (float(k) + 1)
     else:
         return 1
 
-def verifica_escalonabilidade_ekg(lista_tarefas, lista_processadores, meta_dados):
+def verifica_escalonabilidade_ekg(lista_tarefas, lista_processadores, meta_dados, variavel_K):
     tarefas_pesadas = []
     tarefas_leves = []
-    K = 3
+    K = variavel_K
     SEP = calcular_sep(K, meta_dados['qtd_processadores'])
     for tarefa in lista_tarefas:
         if float(tarefa.utilizacao) > float(SEP):
@@ -122,28 +155,32 @@ def verifica_escalonabilidade_ekg(lista_tarefas, lista_processadores, meta_dados
         else:
             tarefas_leves.append(tarefa)
     L = len(tarefas_pesadas)
-    lista_tarefas_separadas = tarefas_pesadas + tarefas_leves
-    lista_tarefas_separadas.insert(0, '')
+    meta_dados['indice_mudanca'] = L
+    lista_tarefas = tarefas_pesadas + tarefas_leves
+    lista_tarefas.insert(0, '')
     if len(tarefas_pesadas) <= int(meta_dados['qtd_processadores']):
         for index in range(1,L+1):
-            lista_processadores[index].adicionar_tarefa(lista_tarefas_separadas[index])
+            lista_processadores[index].adicionar_tarefa(lista_tarefas[index])
         if len(tarefas_leves) > 0:
             if L + 1 <= int(meta_dados['qtd_processadores']):
                 p = L + 1
                 for i in range(L + 1, int(meta_dados['qtd_tarefas']) + 1):
-                    if (lista_processadores[p].utilizacao + lista_tarefas_separadas[i].utilizacao) <= 1:
-                        lista_processadores[p].adicionar_tarefa(lista_tarefas_separadas[i])
+                    if (lista_processadores[p].utilizacao + lista_tarefas[i].utilizacao) <= 1:
+                        lista_processadores[p].adicionar_tarefa(lista_tarefas[i])
                     else:
                         if (p + 1) <= int(meta_dados['qtd_processadores']):
                             if ((p-L) % K) == 0:
                                 p = p + 1
-                                lista_processadores[p].adicionar_tarefa(lista_tarefas_separadas[i])
+                                lista_processadores[p].adicionar_tarefa(lista_tarefas[i])
                             else:
-                                periodo = lista_tarefas_separadas[i].periodo
+                                periodo = lista_tarefas[i].periodo
+                                titulo = lista_tarefas[i].titulo
                                 execucao_1 = (1 - lista_processadores[p].utilizacao) * periodo
-                                execucao_2 = lista_tarefas_separadas[i].execucao - execucao_1
-                                tarefa_1 = Tarefa([0,execucao_1,periodo])
-                                tarefa_2 = Tarefa([0,execucao_2,periodo])
+                                execucao_2 = lista_tarefas[i].execucao - execucao_1
+                                tarefa_1 = Tarefa([0,execucao_1,periodo], titulo + '-1')
+                                tarefa_1.parte = 1
+                                tarefa_2 = Tarefa([0,execucao_2,periodo], titulo + '-2')
+                                tarefa_2.parte = 2
                                 lista_processadores[p].adicionar_tarefa(tarefa_1)
                                 lista_processadores[p+1].adicionar_tarefa(tarefa_2)
                                 p = p + 1
@@ -157,25 +194,41 @@ def verifica_escalonabilidade_ekg(lista_tarefas, lista_processadores, meta_dados
     else:
         return False
 
-f = open('../uni4x8', 'r')
-flag = False
-for line in f:
-    if line[0] != '#':
-        entrada = line.split(': ')
-        meta_dados = retorna_meta_dados(entrada[0])
-        lista_tarefas = retorna_lista_tarefas(entrada[1])
-        lista_processadores = retorna_lista_processadores(int(meta_dados['qtd_processadores']))
-        flag = True
+def main():
+    arquivo = raw_input("Nome do arquivo a ser lido: ")
+    variavel_K = int(raw_input("Determine o K do EKG: "))
+    f = open(arquivo, 'r')
+    flag = False
+    for line in f:
+        if line[0] != '#':
+            entrada = line.split(': ')
+            meta_dados = retorna_meta_dados(entrada[0])
+            lista_tarefas = retorna_lista_tarefas(entrada[1])
+            lista_processadores = retorna_lista_processadores(int(meta_dados['qtd_processadores']))
+            flag = True
 
-        while flag:
-            if verifica_escalonabilidade_ekg(lista_tarefas, lista_processadores, meta_dados):
-                flag = False
-            else:
-                limpar_processadores(lista_processadores)
-                meta_dados['qtd_tarefas'] = int(meta_dados['qtd_tarefas']) - 1
-                del lista_tarefas[-1]
+            while flag:
+                if verifica_escalonabilidade_ekg(lista_tarefas, lista_processadores, meta_dados, variavel_K):
+                    flag = False
+                    string = "Linha " + meta_dados['linha'] + ": Escalonavel por EKG com: "
+                    for tarefa in lista_tarefas:
+                        string += tarefa.titulo + ", "
+                    string = string[:-2]
+                    print string
+                else:
+                    limpar_processadores(lista_processadores)
+                    meta_dados['qtd_tarefas'] = int(meta_dados['qtd_tarefas']) - 1
+                    if meta_dados['qtd_tarefas'] == 0:
+                        print "Nenhuma tarefa e escalonavel por EKG"
+                        return 0
+                    else:
+                        del lista_tarefas[-1]
+            del lista_processadores[0]
+            print "...Escalonamento: "
+            print_processadores(lista_processadores)
 
-        break
+if __name__ == "__main__":
+    main()
 
 #processamento
 
