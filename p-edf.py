@@ -9,6 +9,7 @@ class Tarefa:
         self.periodo = int(arg[2])
         self.deadline = self.periodo
         self.utilizacao = self.execucao / self.periodo
+        self.identificacao = str(arg[3])
     def atualizar_deadline(self):
         self.deadline = self.deadline + self.periodo
         self.execucoes_restantes = self.execucao
@@ -19,7 +20,7 @@ class Tarefa:
         else:
             return False
     def return_tarefa(self):
-        return "Tempo de Execucao: " + str(self.execucao) + ", Periodo: " + str(self.periodo) + ", Utilizacao: " + str(self.utilizacao) + ";"
+        return self.identificacao+" = Tempo de Execucao: " + str(self.execucao) + ", Periodo: " + str(self.periodo) + ", Utilizacao: " + str(self.utilizacao) + ";"
 
 class Processador:
     """docstring for Tarefa."""
@@ -46,10 +47,12 @@ def limpar_processadores(lista_processadores):
 def retorna_lista_tarefas(linha):
     tarefas_str = linha.split(';')
     tarefas_str = tarefas_str[:-1]
+    count = 0
     lista_tarefas = []
     for tarefa_str in tarefas_str:
         tarefa_str = tarefa_str[1:-1]
         tarefa_lst = tarefa_str.split(',')
+        tarefa_lst.append('t'+str(count))
         tarefa = Tarefa(tarefa_lst)
         lista_tarefas.append(tarefa)
     return lista_tarefas
@@ -80,7 +83,7 @@ def verifica_escalonabilidade_edf(lista_tarefas):
     else:
         return True
 
-def ordenar_tarefas_deadline(lista_tarefas, meta_dados):
+def ordenar_tarefas_deadline(lista_tarefas):
     lista_tarefas.sort(key=lambda x: x.deadline)
     return lista_tarefas
 
@@ -98,7 +101,7 @@ def execucao_edf(lista_tarefas, tempo):
         i = 0
         while flagET:
             if lista_tarefas[i].executar_tarefa():
-                print "Tempo: " + str(index + 1) + " - Tarefa: t" + i
+                print "Tempo: " + str(index + 1) + " - Tarefa: " + lista_tarefas[i].identificacao
                 flagET = False
             else:
                 i = i + 1
@@ -146,9 +149,13 @@ for line in f:
             if verifica_escalonabilidade_pedf(lista_processadores, lista_tarefas):
                 flag = False                
             else:                
-            	#print line
+            	print line
                 limpar_processadores(lista_processadores)                
                 meta_dados['qtd_tarefas'] = int(meta_dados['qtd_tarefas']) - 1                
                 del lista_tarefas[-1]
+        for processador in lista_processadores:
+        	processador.print_processador()
+        	execucao_edf(processador.tarefas, 10)
         break
+
         
